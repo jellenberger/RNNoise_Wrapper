@@ -1,74 +1,74 @@
-# Обучение RNNoise
+# RNNoise training
 
-Для обучения использовался датасет от [Microsoft DNS Challenge](https://github.com/microsoft/DNS-Challenge). Обучение выполнялось на машине с CPU Intel Core i7-10510U и 16Gb RAM, ОС Ubuntu 19.10 64bit.
+The dataset from [Microsoft DNS Challenge](https://github.com/microsoft/DNS-Challenge) was used for training. The training was performed on a machine with an Intel Core i7-10510U CPU and 16Gb RAM, Ubuntu 19.10 64bit OS.
 
-**В инструкции подразумевается, что у вас уже склонированы репозитории** с Microsoft DNS Challenge и текущий репозиторий RNNoise_Wrapper.
+**The instructions assume that you have already cloned the repositories** from the Microsoft DNS Challenge and the current RNNoise_Wrapper repository.
 
-### **1. Подготовка датасета Microsoft DNS Challenge**
+### **one. Preparing the Microsoft DNS Challenge dataset**
 
-**Подготовка данных в Microsoft DNS Challenge** путём обновления `noisyspeech_synthesizer.cfg` и выполнения `python3 noisyspeech_synthesizer_singleprocess.py` в соответствии с [исходной инструкцией в репозитории](https://github.com/microsoft/DNS-Challenge#usage).
+**Preparing data in Microsoft DNS Challenge** by updating `noisyspeech_synthesizer.cfg` and running `python3 noisyspeech_synthesizer_singleprocess.py` as per [original instruction in repository](https://github.com/microsoft/DNS-Challenge#usage ).
 
-**Примечание 1.1. Скрипты в DNS Challenge нуждаются в простых правках:**
+**Note 1.1. Scripts in DNS Challenge need simple edits:**
 
-- замена обратного слэша на обычный во всех путях в `noisyspeech_synthesizer.cfg` и `noisyspeech_synthesizer_singleprocess.py`
-- добавление вывода текущего обрабатываемого аудио `print('Processing file #{}...'.format(file_num))` после 165 строки в [`noisyspeech_synthesizer_singleprocess.py`](https://github.com/microsoft/DNS-Challenge/blob/master/noisyspeech_synthesizer_singleprocess.py#L165) (для удобства, процесс подготовки данных довольно медленный)
-- добавление `return np.zeros(0), 16000` в обработку исключения в `audioread()` после 43 строки в [`audiolib.py`](https://github.com/microsoft/DNS-Challenge/blob/master/audiolib.py#L43)
+- replace backslash with normal in all paths in `noisyspeech_synthesizer.cfg` and `noisyspeech_synthesizer_singleprocess.py`
+- adding the output of the currently processed audio `print('Processing file #{}...'.format(file_num))` after line 165 in [`noisyspeech_synthesizer_singleprocess.py`](https://github.com/microsoft/DNS- challenge/blob/master/noisyspeech_synthesizer_singleprocess.py#L165) (for convenience, the data preparation process is rather slow)
+- adding `return np.zeros(0), 16000` to exception handling in `audioread()` after line 43 in [`audiolib.py`](https://github.com/microsoft/DNS-Challenge/blob/ master/audiolib.py#L43)
 
-**Примечание 1.2.** По умолчанию в конфиге можно выбрать только одну папку с чистой речью, т.е. только [один из доступных языков](https://github.com/microsoft/DNS-Challenge/tree/master/datasets/clean). **Для того, что бы использовать все доступные аудио с чистой речью (около 750 часов), нужно папки с речью на других языках переместить в папку с английской речью или в новую отдельную папку.**
+**Note 1.2.** By default, only one folder with pure speech can be selected in the config, i.e. only [one of the available languages](https://github.com/microsoft/DNS-Challenge/tree/master/datasets/clean). **In order to use all available audio with pure speech (about 750 hours), you need to move the folders with speech in other languages ​​to the folder with English speech or to a new separate folder.**
 
-Перемещение папок с речью на других языках в папку с английской речью (выполнять в `DNS-Challenge/datasets/clean`):
+Moving folders with speech in other languages ​​to the folder with English speech (perform in `DNS-Challenge/datasets/clean`):
 
 ```bash
 mv -v french_data german_speech italian_speech russian_speech spanish_speech read_speech
 ```
 
-Вернуть всё обратно:
+Revert everything back:
 
 ```bash
 mv -v read_speech/french_data read_speech/german_speech read_speech/italian_speech read_speech/russian_speech read_speech/spanish_speech ../clean
 ```
 
-**Примечание 1.3.** Если нужно выполнить обучение не на всех доступных данных (а только, например, на 5 часах из них), но с использованием всех доступных языков, **рекомендуется предварительно обрезать количество аудиозаписей для каждого языка по самому наименьшему из них** (меньше всего данных для русского языка, около 47 часов). То есть **сбалансировать языки по числу аудиозаписей** в них.
+**Note 1.3.** If you need to train not on all available data (but only, for example, on 5 hours of them), but using all available languages, **it is recommended to pre-cut the number of audio recordings for each language by the smallest of them** (the least data for the Russian language, about 47 hours). That is, **balance languages ​​by the number of audio recordings** in them.
 
-Это можно сделать скриптом [`training_utils/balance_dns_challenge_dataset.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/balance_dns_challenge_dataset.py) (скрипт лучше скопировать в папку с датасетом, выполнять в `DNS-Challenge`):
+This can be done with the script [`training_utils/balance_dns_challenge_dataset.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/balance_dns_challenge_dataset.py) (it is better to copy the script to the dataset folder, run it in `DNS- challenge`):
 
 ```bash
 python3 balance_dns_challenge_dataset.py -rf datasets/clean -sf russian_speech,read_speech,french_data,german_speech,italian_speech,spanish_speech -bsf all_balanced_speech
 ```
 
-Сбалансированная чистая речь будет сохранена в папке `all_balanced_speech`. Исходная структура аудиозаписей нарушается (все аудиозаписи будут внутри указанной папки, без подпапок), а исходные имена аудиозаписей сохраняются.
+The balanced pure speech will be stored in the `all_balanced_speech` folder. The original structure of the audio recordings is broken (all audio recordings will be inside the specified folder, without subfolders), and the original names of the audio recordings are preserved.
 
-**ВАЖНО!** Примечание 2 и примечание 3 **взаимоисключающие**. Что бы не возникло проблем, **рекомендуется использовать только примечание 3.**
+**IMPORTANT!** Note 2 and Note 3 are **mutually exclusive**. To avoid problems, **recommended to use note 3 only.**
 
-**Подготовленный датасет состоит из 3 папок:**
+**Prepared dataset consists of 3 folders:**
 
-- `clean` — аудиозаписи с чистой речью, каждая длиной 30 секнуд
-- `noise` — аудиозаписи с шумами, каждая длиной 30 секунд
-- `noisy` — аудиозаписи с зашумленной речью (наложенными шумами из `noise` на речь из `clean`), каждая также длиной 30 секунд
+- `clean` - audio recordings with clean speech, each 30 seconds long
+- `noise` - audio recordings with noise, each 30 seconds long
+- `noisy` - audio recordings with noisy speech (superimposed noise from `noise` on speech from `clean`), each also 30 seconds long
 
-Для обучения RNNoise требуются только папки `clean` и `noise`. **Рекомендуется скопировать их в `RNNoise_Wrapper/datasets`.** Для удобства, датасету присвоено **имя `test_training_set`**, то есть полный путь к датасету будет `RNNoise_Wrapper/datasets/test_training_set`.
+RNNoise training requires only the `clean` and `noise` folders. **It is recommended to copy them to `RNNoise_Wrapper/datasets`.** For convenience, the dataset has been given the **name `test_training_set`**, i.e. the full path to the dataset will be `RNNoise_Wrapper/datasets/test_training_set`.
 
-### **2. Подготовка окружения для RNNoise**
+### **2. Preparing the environment for RNNoise**
 
-Перед работой с RNNoise, нужно либо склонировать исходный [репозиторий](https://github.com/xiph/rnnoise), либо распаковать его копию в текущем проекте:
+Before working with RNNoise, you need to either clone the original [repository] (https://github.com/xiph/rnnoise) or extract a copy of it in the current project:
 
 ```bash
-unzip rnnoise_master_20.11.2020.zip
+unzip rnnoise_master_11/20/2020.zip
 ```
 
-Для компиляции RNNoise и его инструментов нужно сначала подготовить ОС (предполагается, что `gcc` уже установлен):
+To compile RNNoise and its tools, you must first prepare the OS (assuming `gcc` is already installed):
 
 ```bash
 sudo apt-get install autoconf libtool
 ```
 
-Затем выполнить сборку инструментов RNNoise (выполнять в `RNNoise_Wrapper`):
+Then build the RNNoise tools (execute in `RNNoise_Wrapper`):
 
 ```bash
 cd rnnoise-master/src && ./compile.sh && cd -
 ```
 
-И подготовить виртуальное окружение Python для обучения:
+And prepare the Python virtual environment for learning:
 
 ```bash
 virtualenv --python=python3.7 env_train
@@ -76,99 +76,99 @@ source env_train/bin/activate
 pip install -r requirements_train.txt
 ```
 
-### **3. Объединение аудиозаписей в датасете**
+### **3. Combining audio recordings in a dataset**
 
-**RNNoise для обучения требует 2 аудиозаписи: с чистой речью и с шумами.** Аудиозаписи должны быть в формате .raw, моно, 16 бит и 48000 Гц. То есть для обучения необходимо объединить все аудиозаписи в датасете в 2 большие.
+**RNNoise training requires 2 audio recordings: pure speech and noisy.** Audio recordings must be in .raw format, mono, 16 bits and 48000 Hz. That is, for training, it is necessary to combine all the audio recordings in the dataset into 2 large ones.
 
-Объединить и подготовить все аудиозаписи с чистой речью и все аудиозаписи с шумами можно скриптом [`training_utils/prepare_dataset_for_training.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/prepare_dataset_for_training.py) (выполнять в `RNNoise_Wrapper`):
+You can merge and prepare all audio recordings with pure speech and all audio recordings with noise with the script [`training_utils/prepare_dataset_for_training.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/prepare_dataset_for_training.py) (run in `RNNoise_Wrapper`):
 
 ```bash
 python3 training_utils/prepare_dataset_for_training.py -cf datasets/test_training_set/clean -nf datasets/test_training_set/noise -bca datasets/test_training_set/all_clean.raw -bna datasets/test_training_set/all_noise.raw
 ```
 
-### **4. Формирование обучающей выборки**
+### **four. Formation of the training sample**
 
-После объединения аудиозаписей **необходимо извлечь из них коэффициенты и сформировать готовую обучающую выборку.** Ключевым параметром является размер матрицы с данными. По умолчанию он равен `500000х87`. **Рекомендуется изменять первую размерность в зависимости от размера датасета.**
+After combining the audio recordings, ** it is necessary to extract the coefficients from them and form a ready-made training sample. ** The key parameter is the size of the data matrix. It defaults to `500000x87`. **It is recommended to change the first dimension depending on the size of the dataset.**
 
-**Примечание 4.1.** Я пробовал обучать с `500000`, `1000000` и `5000000`. Рекомендую попробовать шаг меньше: `500000`, `1000000`, `2000000`. Или даже `500000`, `1000000`, `1500000`, `2000000`. Так будет проще потом отобрать наиболее удачную/качественную модель.
+**Note 4.1.** I have tried training with `500000`, `1000000` and `5000000`. I recommend trying a step less: `500000`, `1000000`, `2000000`. Or even `500000`, `1000000`, `1500000`, `2000000`. So it will be easier then to select the most successful / high-quality model.
 
-Формирование обучающей выборки (выполнять в `RNNoise_Wrapper`):
+Formation of a training sample (perform in `RNNoise_Wrapper`):
 
 ```bash
 rnnoise-master/src/denoise_training datasets/test_training_set/all_clean.raw datasets/test_training_set/all_noise.raw 5000000 > train_logs/test_training_set/training_test_b_500k.f32
 ```
 
-Конвертирование обучающей выборки в `.h5` (выполнять в `RNNoise_Wrapper`):
+Converting the training sample to `.h5` (perform in `RNNoise_Wrapper`):
 
 ```bash
 python3 rnnoise-master/training/bin2hdf5.py train_logs/test_training_set/training_test_b_500k.f32 5000000 87 train_logs/test_training_set/training_test_b_500k.h5
 ```
 
-### **5. Обучение модели**
+### **5. Model training**
 
-Перед запуском обучения нужно **скопировать обновлённый скрипт** из [`training_utils/rnn_train_mod.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/rnn_train_mod.py) в `rnnoise-master/training`.
+Before running the training, you need to **copy the updated script** from [`training_utils/rnn_train_mod.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/rnn_train_mod.py) to `rnnoise-master/ training`.
 
-Обновлённый скрипт обучения **отличается** от исходного **поддержкой аргументов командной строки и доработанными логами**.
+The updated training script **differs** from the original one in **support for command line arguments and improved logs**.
 
-Запуск обучения (выполнять в `RNNoise_Wrapper`):
+Start training (perform in `RNNoise_Wrapper`):
 
 ```bash
 python3 rnnoise-master/training/rnn_train_mod.py train_logs/test_training_set/training_test_b_500k.h5 train_logs/test_training_set/weights_test_b_500k.hdf5
 ```
 
-Обучение длится **120 эпох**. После завершения обучения **веса полученной модели сохраняются в `train_logs/test_training_set/weights_test_b_500k.hdf5`**. На указанной ранее машине обучение заняло около 45 минут.
+Training lasts **120 epochs**. After training is completed, **the weights of the resulting model are stored in `train_logs/test_training_set/weights_test_b_500k.hdf5`**. On the previously mentioned machine, training took about 45 minutes.
 
-**Примечание 5.1.** Для запуска обучения на GPU необходимо установить `tensorflow-gpu==1.15.4`. На NVIDIA RTX2080Ti процесс обучения использовал около 10Гб видеопамяти.
+**Note 5.1.** To run GPU training, you need to install `tensorflow-gpu==1.15.4`. On the NVIDIA RTX2080Ti, the learning process used about 10GB of VRAM.
 
-### **6. Конвертирование модели**
+### **6. Model conversion**
 
-RNNoise написан на С, поэтому полученную обученную tenosrflow **модель необходимо конвертировать в код на С**.
+RNNoise is written in C, so the resulting trained tensorflow **model needs to be converted to C** code.
 
-Исходный конвертер в репозитории с проектом приводит к ошибкам при попытке компиляции RNNoise с новой моделью. **Исправленный конвертер нужно скопировать** из [`training_utils/dump_rnn_mod.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/dump_rnn_mod.py) в `rnnoise-master/training`. Исправления основаны на [issue в исходном репозитории RNNoise](https://github.com/xiph/rnnoise/issues/74#issuecomment-517075991).
+The source converter in the project repository causes errors when trying to compile RNNoise with a new model. **Corrected converter needs to be copied** from [`training_utils/dump_rnn_mod.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/training_utils/dump_rnn_mod.py) to `rnnoise-master/training`. The fixes are based on [issue in RNNoise source repository](https://github.com/xiph/rnnoise/issues/74#issuecomment-517075991).
 
-Конвертирование модели (выполнять в `RNNoise_Wrapper`):
+Model conversion (perform in `RNNoise_Wrapper`):
 
 ```bash
 python3 rnnoise-master/training/dump_rnn_mod.py train_logs/test_training_set/weights_test_b_500k.hdf5 rnnoise-master/src/rnn_data.c rnnoise-master/src/rnn_data.h
 ```
 
-**Примечение 6.1.** Изменять названия и местоположение конечных `.c` и `.h` файлов не рекомендуется. Иначе понадобится изменять скрипты для компиляции RNNoise.
+**Note 6.1.** Changing the names and locations of the final `.c` and `.h` files is not recommended. Otherwise, you will need to modify scripts to compile RNNoise.
 
-### **7. Сборка RNNoise с новой моделью**
+### **7. Building RNNoise with the new model**
 
-Для проверки и использования новой модели **нужно скомпилировать RNNoise** с обновлёнными `src/rnn_data.c` и `src/rnn_data.h` (выполнять в `RNNoise_Wrapper`):
+To test and use the new model **need to compile RNNoise** with updated `src/rnn_data.c` and `src/rnn_data.h` (run in `RNNoise_Wrapper`):
 
 ```bash
 cd rnnoise-master && make clean && ./autogen.sh && ./configure && make && cd -
 ```
 
-После успешной сборки, для удобства, можно скопировать полученный бинарник в папку с обученной моделью и её весами:
+After a successful build, for convenience, you can copy the resulting binary to the folder with the trained model and its weights:
 
 ```bash
 cp rnnoise-master/.libs/librnnoise.so.0.4.1 train_logs/test_training_set/librnnoise_test_b_500k.so.0.4.1
 ```
 
-### **8. Тестирование новой модели**
+### **eight. Testing a new model**
 
-**Для оценки качества работы** полученной модели рекомендуется **выполнить сравнительный тест со стандартной моделью** с помощью [`rnnoise_wrapper_comparative_test.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/rnnoise_wrapper_comparative_test.py).
+**To evaluate the performance** of the resulting model, it is recommended to **run a comparison test with the standard model** using [`rnnoise_wrapper_comparative_test.py`](https://github.com/Desklop/RNNoise_Wrapper/blob/master/rnnoise_wrapper_comparative_test.py ).
 
-## Для справки
+## For reference
 
-**Репозиторий так же содержит [`Dockerfiles`](https://github.com/Desklop/RNNoise_Wrapper/tree/master/training_utils) для запуска обучения в docker контейнере**, как на CPU, так и на GPU. Это **может быть полезно на старых CPU**, которые не поддерживают AVX инструкции и на которых не установится TensorFlow из pip (в этом случае можно поискать подходящий пакет tensorflow в [`optimized_tensorflow_wheels`](https://github.com/Desklop/optimized_tensorflow_wheels) или в Google).
+**The repository also contains [`Dockerfiles`](https://github.com/Desklop/RNNoise_Wrapper/tree/master/training_utils) for running training in a docker container**, both on CPU and GPU. This **may be useful on older CPUs** that don't support AVX instructions and won't install TensorFlow from pip (in this case, you can look for a suitable tensorflow package in [`optimized_tensorflow_wheels`](https://github.com/Desklop /optimized_tensorflow_wheels) or Google).
 
-**Список полезных bash команд:**
+**List of useful bash commands:**
 
-1. Копирование папок вместе с содержимым: `cp -R source source_copy`
-2. Перемещение папок вместе с содержимым: `mv -v source_1 source_2 source_N all_source`
-3. Копирование 10 случайных файлов из текущей папки: `ls | shuf -n 10 | xargs -i cp {} ../random_audio`
-4. Подсчёт размера папки: `du -hs datasets/clean`
-5. Подсчёт количества файлов в текущей папке и всех её подпапках: `ls -laR | grep "^-" | wc`
-6. Архивировать папку в .zip: `zip -r test_training_set.zip datasets/test_training_set`
-7. Распаковать архив в текущую папку: `unzip test_training_set.zip`
+1. Copy folders with contents: `cp -R source source_copy`
+2. Move folders with contents: `mv -v source_1 source_2 source_N all_source`
+3. Copy 10 random files from the current folder: `ls | shuf -n 10 | xargs -i cp {} ../random_audio`
+4. Calculate folder size: `du -hs datasets/clean`
+5. Counting the number of files in the current folder and all its subfolders: `ls -laR | grep "^-" | wc`
+6. Archive the folder in .zip: `zip -r test_training_set.zip datasets/test_training_set`
+7. Unzip the archive to the current folder: `unzip test_training_set.zip`
 
-## Источники
+## Sources
 
-Документация и issues, на основе которых составлена данная инструкция:
+Documentation and issues on which this instruction is based:
 
 1. https://github.com/xiph/rnnoise/blob/master/TRAINING-README
 2. https://github.com/xiph/rnnoise/issues/8#issuecomment-346947946
@@ -177,4 +177,4 @@ cp rnnoise-master/.libs/librnnoise.so.0.4.1 train_logs/test_training_set/librnno
 
 ---
 
-Если у вас возникнут вопросы или вы хотите сотрудничать, можете написать мне на почту: vladsklim@gmail.com или в [LinkedIn](https://www.linkedin.com/in/vladklim/).
+If you have any questions or want to collaborate, you can email me: vladsklim@gmail.com or on [LinkedIn](https://www.linkedin.com/in/vladklim/).

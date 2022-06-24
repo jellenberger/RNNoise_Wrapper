@@ -7,11 +7,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 '''
-Предназначен для подавления шума в wav аудиозаписи с помощью библиотеки RNNoise (https://github.com/xiph/rnnoise).
+Designed to suppress noise in wav audio using the RNNoise library (https://github.com/xiph/rnnoise).
 
-Содержит класс RNNoise. Подробнее в https://github.com/Desklop/RNNoise_Wrapper.
+Contains the RNNoise class. Read more at https://github.com/Desklop/RNNoise_Wrapper.
 
-Зависимости: pydub, numpy.
+Dependencies: pydub, numpy.
 '''
 
 from .rnnoise_wrapper import RNNoise

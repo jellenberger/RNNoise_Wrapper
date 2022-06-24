@@ -7,11 +7,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 '''
-Предназначен для подавления шума в wav аудиозаписи с помощью библиотеки RNNoise (https://github.com/xiph/rnnoise).
+Designed to suppress noise in wav audio using the RNNoise library (https://github.com/xiph/rnnoise).
 
-Содержит класс RNNoise. Подробнее в https://github.com/Desklop/RNNoise_Wrapper.
+Contains the RNNoise class. Read more at https://github.com/Desklop/RNNoise_Wrapper.
 
-Зависимости: pydub, numpy.
+Dependencies: pydub, numpy.
 '''
 
 import os
@@ -27,20 +27,20 @@ __version__ = 1.1
 
 
 class RNNoise(object):
-    ''' Предоставляет методы для упрощения работы с шумодавом RNNoise:
-    - read_wav(): загрузка .wav аудиозаписи и приведение её в поддерживаемый формат
-    - write_wav(): сохранение .wav аудиозаписи
-    - filter(): разбиение аудиозаписи на фреймы и очистка их от шума
-    - filter_frame(): очистка только одного фрейма от шума (обращение напрямую к бинарнику RNNoise)
-    - reset(): пересоздать объект RNNoise из библиотеки для сброса состояния нейронной сети
+    """Provides methods to simplify working with RNNoise:
+    - read_wav(): loading a .wav audio recording and converting it to a supported format
+    - write_wav(): save .wav audio recording
+    - filter(): split audio into frames and clean them from noise
+    - filter_frame(): clearing only one frame from noise (directly accessing the RNNoise binary)
+    - reset(): recreate the RNNoise object from the library to reset the state of the neural network
 
-    1. f_name_lib - путь к библиотеке, если None и:
-            - тип используемой ОС linux или mac (darwin) - использовать librnnoise_5h_b_500k.so.0.4.1 из файлов пакета
-            - тип используемой ОС windows или другое - выполнить поиск в текущей папке и её подпапках файла с префиксом 'librnnoise'
-        если является путём к библиотеке/именем библиотеки - проверить существование переданного пути/имени библиотеки и если:
-            - путь/имя существует - вернуть абсолютный путь
-            - путь/имя не существует - выполнить поиск в текущей папке и её подпапках файла/пути, используя переданное значение в качестве субимени'''
-
+    1. f_name_lib - path to the library, if None and:
+            - OS type linux or mac (darwin) - use librnnoise_5h_b_500k.so.0.4.1 from package files
+            - the type of OS used windows or other - search in the current folder and its subfolders for a file with the prefix 'librnnoise'
+        if is a path to a library/library name - check the existence of the passed path/library name and if:
+            - path/name exists - return absolute path
+            - path/name does not exist - search the current folder and its subfolders for the file/path using the passed value as the subname
+    """
     sample_width = 2
     channels = 1
     sample_rate = 48000
@@ -59,15 +59,15 @@ class RNNoise(object):
 
 
     def __get_f_name_lib(self, f_name_lib=None):
-        ''' Найти и/или проверить путь к скомпилированной библиотеке RNNoise.
+        '''Find and/or check the path to the compiled RNNoise library.
 
-        1. f_name_lib - путь к библиотеке, если None и:
-                - тип используемой ОС linux или mac (darwin) - использовать librnnoise_5h_b_500k.so.0.4.1 из файлов пакета
-                - тип используемой ОС windows или другое - выполнить поиск в текущей папке и её подпапках файла с префиксом 'librnnoise'
-            если является путём к библиотеке/именем библиотеки - проверить существование переданного пути/имени библиотеки и если:
-                - путь/имя существует - вернуть абсолютный путь
-                - путь/имя не существует - выполнить поиск в текущей папке и её подпапках файла/пути, используя переданное значение в качестве субимени
-        2. возвращает f_name_lib с проверенным абсолютным путём к найденной библиотеке '''
+        1. f_name_lib - path to the library, if None and:
+                - OS type linux or mac (darwin) - use librnnoise_5h_b_500k.so.0.4.1 from package files
+                - the type of OS used windows or other - search in the current folder and its subfolders for a file with the prefix 'librnnoise'
+            if is a path to a library/library name - check the existence of the passed path/library name and if:
+                - path/name exists - return absolute path
+                - path/name does not exist - search the current folder and its subfolders for the file/path using the passed value as the subname
+        2. returns f_name_lib with checked absolute path to found library'''
 
         package_name = __file__
         package_name = package_name[package_name.rfind('/')+1:package_name.rfind('.py')]
@@ -81,7 +81,7 @@ class RNNoise(object):
                     found_f_name_lib = self.__find_lib(subname)
             else:
                 found_f_name_lib = self.__find_lib(subname)
-            
+
             if not found_f_name_lib:
                 raise NameError("could not find RNNoise library with subname '{}'".format(subname))
 
@@ -99,10 +99,10 @@ class RNNoise(object):
 
 
     def __find_lib(self, f_name_lib, root_folder='.'):
-        ''' Выполнить рекурсивный поиск файла f_name_lib в папке root_folder и всех её подпапках.
-        1. f_name_lib - имя искомого файла или его субимя (часть имени, позволяющая однозначно идентифицировать файл)
-        2. root_folder - корневая папка, из которой начинать поиск
-        3. возвращает найденный существующий путь или None '''
+        ''' Perform a recursive search for the f_name_lib file in the root_folder and all its subfolders.
+        1. f_name_lib - the name of the file being searched for or its subname (part of the name that allows you to uniquely identify the file)
+        2. root_folder - root folder from which to start searching
+        3. returns found existing path or None'''
 
         f_name_lib_full = os.path.abspath(f_name_lib)
         if os.path.isfile(f_name_lib_full) and os.path.exists(f_name_lib_full):
@@ -115,30 +115,30 @@ class RNNoise(object):
 
 
     def reset(self):
-        ''' Сбросить состояние нейронной сети путём создания нового объекта RNNoise в скомпилированной исходной библиотеке.
-        Может быть полезно, когда шумоподавление используется на большом количестве аудиозаписей для предотвращения ухудшения
-        качества работы.
-        
-        Эффективность и надобность в данном методе не доказана. Реализовано просто на всякий случай :) '''
+        '''Reset the state of the neural network by creating a new RNNoise object in the compiled source library.
+        Can be useful when noise reduction is used on a large number of audio recordings to prevent degradation
+        work quality.
+
+        The effectiveness and necessity of this method has not been proven. Implemented just in case :)'''
 
         self.rnnoise_lib.rnnoise_destroy(self.rnnoise_obj)
         self.rnnoise_obj = self.rnnoise_lib.rnnoise_create(None)
 
 
     def filter_frame(self, frame):
-        ''' Очистка одного фрейма от шума с помощью RNNoise. Фрейм должен быть длиной 10 миллисекунд в формате 16 бит 48 кГц.
-        1. frame - байтовая строка с аудиоданными
-        2. возвращает tuple из вероятности наличия голоса во фрейме и очищенный от шума фрейм
-        
-        Вероятность наличия голоса во фрейме (в denoise.c названо 'vad_probability') - это число от 0 до 1, отражающее вероятность
-        того, что фрейм содержит голос (или, возможно, громкий звук). Может использоваться для реализации встроенного VAD. '''
+        '''Denoising one frame with RNNoise. The frame must be 10 milliseconds long in 16 bit 48 kHz format.
+        1. frame - byte string with audio data
+        2. returns a tuple from the probability of having a voice in the frame and a denoised frame
 
-        # 480 = len(frame)/2, len(frame) всегда должна быть 960 значений (т.к. ширина фрейма 2 байта (16 бит))
-        # (т.е. длина фрейма 10 мс (0.01 сек) при частоте дискретизации 48000 Гц, 48000*0.01*2=960).
-        # Если len(frame) != 960, будет ошибка сегментирования либо сильные искажения на итоговой аудиозаписи.
+        The probability of having a vote in a frame (called 'vad_probability' in denoise.c) is a number between 0 and 1 representing the probability
+        that the frame contains a voice (or perhaps a loud sound). Can be used to implement an inline VAD.'''
 
-        # Если вынести np.ndarray((480,), 'h', frame).astype(ctypes.c_float) в __get_frames(), то прирост в скорости работы составит
-        # не более 5-7% на аудиозаписях, длиной от 60 секунд. На более коротких аудиозаписях прирост скорости менее заметен и несущественен.
+        # 480 = len(frame)/2, len(frame) should always be 960 values ​​(because frame width is 2 bytes (16 bits))
+        # (i.e. frame length 10 ms (0.01 sec) at 48000 Hz sample rate, 48000*0.01*2=960).
+        # If len(frame) != 960, there will be a segmentation error or severe distortion in the final audio recording.
+
+        # If we move np.ndarray((480,), 'h', frame).astype(ctypes.c_float) to __get_frames(), then the performance gain will be
+        # no more than 5-7% on audio recordings, longer than 60 seconds. On shorter audio recordings, the increase in speed is less noticeable and insignificant
 
         frame_buf = np.ndarray((480,), 'h', frame).astype(ctypes.c_float)
         frame_buf_ptr = frame_buf.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
@@ -148,27 +148,27 @@ class RNNoise(object):
 
 
     def filter(self, audio, sample_rate=None, voice_prob_threshold=0.0, save_source_sample_rate=True):
-        ''' Получить фреймы из аудиозаписи и очистить их от шума. Для шумоподавления используется RNNoise.
-        
-        RNNoise дополнительно для каждого фрейма возвращает вероятность наличия голоса в этом фрейме (в виде числа от 0 до 1) и
-        с помощью voice_prob_threshold можно отфильтровать фреймы по этому значению. Если вероятность ниже, чем voice_prob_threshold,
-        то фрейм будет удалён из аудиозаписи.
-        
-        ВНИМАНИЕ! Частота дискретизации аудиозаписи принудительно приводится к 48 кГц. Другие значения не поддерживаются RNNoise.
-        Однако частота дискретизации возвращаемой аудиозаписи может быть обратно приведена к исходной.
+        ''' Get frames from an audio recording and de-noise them. RNNoise is used for noise reduction.
 
-        ВНИМАНИЕ! Для успешной работы RNNoise необходима аудиозапись длиной минимум 1 секунда, на которой присутсвует как голос, так и шум
-        (причём шум в идеале должен быть так же и перед голосом). В противном случае качество шумоподавления будет очень низким.
-        
-        ВНИМАНИЕ! В случае, если передаются части одной аудиозаписи (шумоподавление аудио в потоке), то их длина должна быть не менее 10 мс
-        и кратна 10 (т.к. библиотека RNNoise поддерживает только фреймы длиной 10 мс). Такой вариант работы на качество шумоподавления
-        практически не влияет.
+        RNNoise additionally for each frame returns the probability of having a vote in this frame (as a number from 0 to 1) and
+        using voice_prob_threshold, you can filter frames by this value. If the probability is lower than voice_prob_threshold,
+        then the frame will be removed from the audio recording.
 
-        1. audio - объект pydub.AudioSegment с аудиозаписью или байтовая строка с аудиоданными (без заголовков wav)
-        2. sample_rate - частота дискретизации (обязательно только когда audio - байтовая строка)
-        3. voice_prob_threshold - порог вероятности наличия голоса в каждом фрейме (значение от 0 до 1, если 0 - использовать все фреймы)
-        4. save_source_sample_rate - True: приводить частоту дискретизации возвращаемой аудиозаписи к исходной
-        5. возвращает pydub.AudioSegment или байтовую строку (без заголовков wav), очищенную от шума (тип возвращаемого объекта соответствует типу audio) '''
+        ATTENTION! The sampling rate of the audio recording is forced to 48 kHz. Other values ​​are not supported by RNNoise.
+        However, the sample rate of the returned audio can be downsampled to the original.
+
+        ATTENTION! For RNNoise to work successfully, you need an audio recording of at least 1 second in length, which contains both voice and noise.
+        (Moreover, the noise should ideally be the same in front of the voice). Otherwise, the quality of noise reduction will be very poor.
+
+        ATTENTION! If parts of one audio recording are transmitted (audio noise reduction in the stream), then their length must be at least 10 ms
+        and a multiple of 10 (because the RNNoise library only supports 10ms frames). This option works on the quality of noise reduction
+        practically no effect.
+
+        1. audio - pydub.AudioSegment object with audio recording or byte string with audio data (no wav headers)
+        2. sample_rate - sample rate (required only when audio is a byte string)
+        3. voice_prob_threshold - threshold for the probability of having a voice in each frame (value from 0 to 1, if 0 - use all frames)
+        4. save_source_sample_rate - True: bring the sample rate of the returned audio recording to the original
+        5. returns pydub.AudioSegment or a byte string (without wav headers) denoised (the returned object type is audio)'''
 
         frames, source_sample_rate = self.__get_frames(audio, sample_rate)
         if not save_source_sample_rate:
@@ -183,23 +183,23 @@ class RNNoise(object):
 
 
     def __filter_frames(self, frames, voice_prob_threshold=0.0, sample_rate=None):
-        ''' Очистка фреймов от шума. Для шумоподавления используется RNNoise.
-        
-        RNNoise дополнительно для каждого фрейма возвращает вероятность наличия голоса в этом фрейме (в виде числа от 0 до 1) и
-        с помощью voice_prob_threshold можно отфильтровать фреймы по этому значению. Если вероятность ниже, чем voice_prob_threshold,
-        то фрейм будет удалён из аудиозаписи.
+        ''' Clearing frames from noise. RNNoise is used for noise reduction.
 
-        ВНИМАНИЕ! Для успешной работы RNNoise необходима аудиозапись длиной минимум 1 секунда, на которой присутсвует как голос, так и шум
-        (причём шум в идеале должен быть так же и перед голосом). В противном случае качество шумоподавления будет очень низким.
-        
-        ВНИМАНИЕ! В случае, если передаются части одной аудиозаписи, то их длина должна быть не менее 10 мс (длина одного фрейма) и кратна 10
-        (т.к. RNNoise поддерживает только фреймы длиной 10 мс). Такой вариант работы на качество шумоподавления не влияет и может использоваться
-        для шумоподавления аудио в потоке.
+        RNNoise additionally for each frame returns the probability of having a vote in this frame (as a number from 0 to 1) and
+        using voice_prob_threshold, you can filter frames by this value. If the probability is lower than voice_prob_threshold,
+        then the frame will be removed from the audio recording.
 
-        1. frames - список фреймов длиной по 10 миллисекунд
-        2. voice_prob_threshold - порог вероятности наличия голоса в каждом фрейме (значение от 0 до 1, если 0 - использовать все фреймы)
-        3. sample_rate - желаемая частота дискретизации очищенной аудиозаписи (если None - не менять частоту дискретизации)
-        4. возвращает объект pydub.AudioSegment с аудиозаписью, очищенной от шума '''
+        ATTENTION! For RNNoise to work successfully, you need an audio recording of at least 1 second in length, which contains both voice and noise.
+        (Moreover, the noise should ideally be the same in front of the voice). Otherwise, the quality of noise reduction will be very poor.
+
+        ATTENTION! If parts of one audio recording are transmitted, then their length must be at least 10 ms (the length of one frame) and a multiple of 10
+        (because RNNoise only supports 10ms frames). This option does not affect the quality of noise reduction and can be used
+        to denoise the audio in the stream.
+
+        1. frames - a list of frames with a length of 10 milliseconds
+        2. voice_prob_threshold - threshold for the probability of having a voice in each frame (value from 0 to 1, if 0 - use all frames)
+        3. sample_rate - the desired sampling rate of the cleared audio recording (if None - do not change the sampling rate)
+        4. returns a pydub.AudioSegment object with the denoised audio recording'''
 
         denoised_frames_with_probability = [self.filter_frame(frame) for frame in frames]
         denoised_frames = [frame_with_prob[1] for frame_with_prob in denoised_frames_with_probability if frame_with_prob[0] >= voice_prob_threshold]
@@ -213,15 +213,16 @@ class RNNoise(object):
 
 
     def __get_frames(self, audio, sample_rate=None):
-        ''' Получить фреймы из аудиозаписи. Фреймы представляют собой байтовые строки с аудиоданными фиксированной длины.
-        RNNoise поддерживает только фреймы длиной 10 миллисекунд.
+        '''Get frames from an audio recording. Frames are byte strings of fixed length audio data.
+        RNNoise only supports 10 millisecond frames.
 
-        ВНИМАНИЕ! Частота дискретизации аудиозаписи принудительно приводится к 48 кГц. Другие значения не поддерживаются RNNoise.
+        ATTENTION! The sampling rate of the audio recording is forced to 48 kHz. Other values ​​are not supported by RNNoise.
 
-        1. audio - объект pydub.AudioSegment с аудиозаписью или байтовая строка с аудиоданными (без заголовков wav)
-        2. sample_rate - частота дискретизации (обязательно только когда audio - байтовая строка):
-            если частота дискретизации не поддерживается - она будет приведена к поддерживаемым 48 кГц
-        3. возвращает tuple из списка фреймов и исходной частоты дискретизации аудиозаписи '''
+        1. audio - pydub.AudioSegment object with audio recording or byte string with audio data (no wav headers)
+        2. sample_rate - sample rate (required only when audio is a byte string):
+            if the sampling rate is not supported - it will be converted to supported 48 kHz
+        3. returns a tuple from a list of frames and the original sample rate of the audio recording
+        '''
 
         if isinstance(audio, AudioSegment):
             sample_rate = source_sample_rate = audio.frame_rate
@@ -254,11 +255,11 @@ class RNNoise(object):
 
 
     def read_wav(self, f_name_wav, sample_rate=None):
-        ''' Загрузить .wav аудиозапись. Поддерживаются только моно аудиозаписи 2 байта/16 бит. Если параметры у загружаемой аудиозаписи
-        отличаются от указанных - она будет приведена в требуемый формат.
-        1. f_name_wav - имя .wav аудиозаписи или BytesIO
-        2. sample_rate - желаемая частота дискретизации (если None - не менять частоту дискретизации)
-        3. возвращает объект pydub.AudioSegment с аудиозаписью '''
+        '''Download .wav audio recording. Only 2-byte/16-bit mono audio recordings are supported. If the parameters of the downloaded audio recording
+        different from those specified - it will be converted to the required format.
+        1. f_name_wav - name of the .wav audio recording or BytesIO
+        2. sample_rate - the desired sampling rate (if None - do not change the sampling rate)
+        3. returns a pydub.AudioSegment object with an audio recording'''
 
         if isinstance(f_name_wav, str) and f_name_wav.rfind('.wav') == -1:
             raise ValueError("'f_name_wav' must contain the name .wav audio recording")
@@ -275,12 +276,12 @@ class RNNoise(object):
 
 
     def write_wav(self, f_name_wav, audio_data, sample_rate=None):
-        ''' Сохранить .wav аудиозапись.
-        1. f_name_wav - имя .wav аудиозаписи, в который будет сохранена аудиозапись или BytesIO
-        2. audio_data - объект pydub.AudioSegment с аудиозаписью или байтовая строка с аудиоданными (без заголовка wav)
-        3. sample_rate - частота дискретизации аудиозаписи:
-            когда audio_data - байтовая строка, должна соответствовать реальной частоте дискретизации аудиозаписи
-            в остальных случаях частота дискретизации будет приведена к указанной (если None - не менять частоту дискретизации) '''
+        '''Save .wav audio recording.
+        1. f_name_wav - the name of the .wav audio recording where the audio recording or BytesIO will be saved
+        2. audio_data - pydub.AudioSegment object with audio recording or byte string with audio data (no wav header)
+        3. sample_rate - audio sample rate:
+            when audio_data is a byte string, must match the actual sample rate of the audio recording
+            in other cases, the sampling rate will be reduced to the specified one (if None - do not change the sampling rate)'''
 
         if isinstance(audio_data, AudioSegment):
             self.write_wav_from_audiosegment(f_name_wav, audio_data, sample_rate)
@@ -295,10 +296,10 @@ class RNNoise(object):
 
 
     def write_wav_from_audiosegment(self, f_name_wav, audio, desired_sample_rate=None):
-        ''' Сохранить .wav аудиозапись.
-        1. f_name_wav - имя .wav файла, в который будет сохранена аудиозапись или BytesIO
-        2. audio - объект pydub.AudioSegment с аудиозаписью
-        3. desired_sample_rate - желаемая частота дискретизации (если None - не менять частоту дискретизации) '''
+        '''Save .wav audio recording.
+        1. f_name_wav - the name of the .wav file where the audio recording or BytesIO will be saved
+        2. audio - pydub.AudioSegment object with audio recording
+        3. desired_sample_rate - the desired sample rate (if None - do not change the sample rate)'''
 
         if desired_sample_rate:
             audio = audio.set_frame_rate(desired_sample_rate)
@@ -306,11 +307,11 @@ class RNNoise(object):
 
 
     def write_wav_from_bytes(self, f_name_wav, audio_bytes, sample_rate, desired_sample_rate=None):
-        ''' Сохранить .wav аудиозапись.
-        1. f_name_wav - имя .wav файла, в который будет сохранена аудиозапись или BytesIO
-        2. audio_bytes - байтовая строка с аудиозаписью (без заголовков wav)
-        3. sample_rate - частота дискретизации
-        4. desired_sample_rate - желаемая частота дискретизации (если None - не менять частоту дискретизации) '''
+        '''Save .wav audio recording.
+        1. f_name_wav - the name of the .wav file where the audio recording or BytesIO will be saved
+        2. audio_bytes - byte string with audio recording (without wav headers)
+        3. sample_rate - sample rate
+        4. desired_sample_rate - the desired sample rate (if None - do not change the sample rate)'''
 
         audio = AudioSegment(data=audio_bytes, sample_width=self.sample_width, frame_rate=sample_rate, channels=self.channels)
         if desired_sample_rate and desired_sample_rate != sample_rate:
@@ -379,7 +380,7 @@ def main():
 
     f_name_denoised_audio = f_name_audio[:f_name_audio.rfind('.wav')] + '_denoised_stream.wav'
     denoiser.write_wav(f_name_denoised_audio, denoised_audio, sample_rate=audio.frame_rate)
-    
+
     print("\nAudio: '{}', length: {:.2f} s:".format(f_name_audio, len(audio)/1000))
     print("\tdenoised audio                                '{}'".format(f_name_denoised_audio))
     print('\tprocessing time                               {:.2f} s'.format(elapsed_time))
