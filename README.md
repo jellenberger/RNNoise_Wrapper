@@ -1,3 +1,7 @@
+# Fork Description
+
+Personal Fork of [RNNoise_Wrapper](https://github.com/Desklop/RNNoise_Wrapper) via [this fork](https://github.com/sidneydavis/RNNoise_Wrapper) which translates the original Russian docs and comments to English. Original translated README below.
+
 # RNNoise Wrapper
 
 This is a simple Python wrapper for noise reduction [RNNoise](https://github.com/xiph/rnnoise). Only Python 3 is supported. The code is based on [issue by snakers4](https://github.com/xiph/rnnoise/issues/69) from the RNNoise repository, for which special thanks to him.
