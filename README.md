@@ -1,6 +1,8 @@
 # Fork Description
 
-Personal Fork of [RNNoise_Wrapper](https://github.com/Desklop/RNNoise_Wrapper) via [this fork](https://github.com/sidneydavis/RNNoise_Wrapper) which translates the original Russian docs and comments to English. Original translated README below.
+Personal fork of [RNNoise_Wrapper](https://github.com/Desklop/RNNoise_Wrapper). This fork was actually forked from [another fork](https://github.com/sidneydavis/RNNoise_Wrapper), because it contains docs and comments translated to English (originally in Russian). [This doc](https://www.big-meter.com/opensource/en/5fe76682e90e736ddf283013.html) has more info about RNNoise. Below is the original translated README.
+
+------------
 
 # RNNoise Wrapper
 
